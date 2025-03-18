@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<HBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="500.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="app.chatapp.service.MessageService">
+   <children>
+      <VBox prefHeight="400.0" prefWidth="200.0" spacing="10" style="-fx-background-color: #000000; -fx-padding: 10;">
+         <children>
+            <Label fx:id="myNameLabel" alignment="CENTER" maxWidth="1.7976931348623157E308" style="-fx-background-color: #1C1C1C; -fx-border-radius: 5; -fx-padding: 5;" textFill="#FFFFFF">
+               <font>
+                  <Font name="Arial" size="16.0" />
+               </font>
+            </Label>
+            <Label alignment="CENTER" maxWidth="1.7976931348623157E308" style="-fx-background-color: #1C1C1C; -fx-border-radius: 5; -fx-padding: 5;" text="Users" textFill="#FFFFFF" VBox.vgrow="ALWAYS">
+               <font>
+                  <Font name="Arial" size="14.0" />
+               </font>
+            </Label>
+            <ListView fx:id="friendsListView" prefHeight="300.0" prefWidth="180.0" style="-fx-background-color: #1C1C1C; -fx-text-fill: white;" VBox.vgrow="ALWAYS" />
+         </children>
+      </VBox>
+      <VBox alignment="TOP_CENTER" HBox.hgrow="ALWAYS" spacing="10" style="-fx-background-color: #000000; -fx-padding: 10;">
+         <children>
+            <ListView fx:id="chatListView" prefHeight="400.0" prefWidth="580.0" style="-fx-background-color: #000000; -fx-border-radius: 5; -fx-text-fill: white;" VBox.vgrow="ALWAYS" />
+            <HBox spacing="10">
+               <children>
+                  <TextField fx:id="messagesTextField" style="-fx-background-color: #1C1C1C; -fx-border-radius: 5; -fx-padding: 5; -fx-text-fill: white;" HBox.hgrow="ALWAYS">
+                     <font>
+                        <Font size="14.0" />
+                     </font>
+                  </TextField>
+                  <Button fx:id="sendButton" mnemonicParsing="false" style="-fx-background-color: #FFFFFF; -fx-border-radius: 5; -fx-text-fill: black; -fx-padding: 5;" text="Send">
+                     <font>
+                        <Font name="Arial Bold" size="14.0" />
+                     </font>
+                  </Button>
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </children>
+</HBox>

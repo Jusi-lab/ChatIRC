@@ -1,0 +1,43 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'scala'
+    id 'org.openjfx.javafxplugin' version '0.0.13'
+}
+
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    mainClass = 'app.chatapp.MainApp'
+}
+
+def versions = [
+        ScalaBinary: "2.13"
+]
+
+javafx {
+    version = '12'
+    modules = [ 'javafx.controls', 'javafx.fxml' ]
+}
+
+dependencies {
+    implementation "ch.qos.logback:logback-classic:1.2.3"
+    implementation 'org.jetbrains:annotations:23.0.0'
+    implementation 'org.scala-lang:scala-library:2.13.8'
+    implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:2.6.18")
+    implementation "com.typesafe.akka:akka-actor_${versions.ScalaBinary}"
+    implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:2.6.18")
+    implementation "com.typesafe.akka:akka-cluster_${versions.ScalaBinary}"
+    implementation "com.typesafe.akka:akka-cluster-tools_${versions.ScalaBinary}"
+    implementation "com.typesafe.akka:akka-serialization-jackson_${versions.ScalaBinary}"
+    implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:2.6.18")
+
+    implementation "com.typesafe.akka:akka-actor-typed_${versions.ScalaBinary}"
+    implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:2.6.18")
+
+    implementation "com.typesafe.akka:akka-cluster-typed_${versions.ScalaBinary}"
+}
