@@ -23,78 +23,93 @@ import scala.util.Using
 class LoginService extends LoginController with Initializable {
 
   // Переменная для хранения свободного порта
-    private val userPort: Int = freePorts
+  private val userPort: Int = freePorts
 
   // Переменная для хранения имени пользователя
-    private var userNickName: String = _
+  private var userNickName: String = _
 
   // Инициализация компонента
-    override def initialize(location: URL, resources: ResourceBundle): Unit = {
+  override def initialize(location: URL, resources: ResourceBundle): Unit = {
 
-        portField.setText(userPort.toString)
+    portField.setText(userPort.toString)
 
-        signInButton.setOnMouseEntered(_ => {
-            signInButton.setStyle("-fx-background-color: #643a7e")
-        })
+    signInButton.setOnMouseEntered(_ => {
+      signInButton.setStyle("-fx-background-color: #643a7e")
+    })
 
-        signInButton.setOnMouseExited(_ => {
-            signInButton.setStyle("-fx-background-color: #806491")
-        })
+    signInButton.setOnMouseExited(_ => {
+      signInButton.setStyle("-fx-background-color: #806491")
+    })
 
-        signInButton.setOnAction(_ => {
-            signIn()
-        })
+    signInButton.setOnAction(_ => {
+      signIn()
+    })
 
-        nickNameField.setOnKeyPressed((t: KeyEvent) => {
-            if(t.getCode.equals(KeyCode.ENTER)) signIn()
-        })
+    nickNameField.setOnKeyPressed((t: KeyEvent) => {
+      if (t.getCode.equals(KeyCode.ENTER)) signIn()
+    })
 
-        portField.setOnKeyPressed((t: KeyEvent) => {
-            if(t.getCode.equals(KeyCode.ENTER)) signIn()
-        })
-    }
+    portField.setOnKeyPressed((t: KeyEvent) => {
+      if (t.getCode.equals(KeyCode.ENTER)) signIn()
+    })
+  }
 
   // Метод для обработки входа в систему
-    def signIn(): Unit = {
-        if (nickNameField.getText.nonEmpty || portField.getText.nonEmpty) {
-            userNickName = nickNameField.getText
-            signInButton.getScene.getWindow.hide()
+  def signIn(): Unit = {
+    // Проверяем, что поля не пустые
+    if (nickNameField.getText.nonEmpty || portField.getText.nonEmpty) {
+      userNickName = nickNameField.getText
+      signInButton.getScene.getWindow.hide()
 
-            val system = startup(userPort)                          //RUN CLUSTER
-            implicit val timeout: Timeout = Timeout(20.seconds)
-            implicit val scheduler: Scheduler = system.scheduler
-            implicit val context: ExecutionContextExecutor = system.executionContext
-            val loader: FXMLLoader = new FXMLLoader()
-            loader.setLocation(getClass.getResource("/chatwindow.fxml"))
-            try {
-                loader.load()
-            } catch {
-                case exception: IOException =>
-                    exception.printStackTrace()
-            }
-            val root: Parent = loader.getRoot
-            val stage: Stage = new Stage()
-            val receivedController: MessageService = loader.getController
-            stage.setScene(new Scene(root))
-            stage.setTitle("Chat")
-            stage.show()
+      try {
+        val system = startup(userPort)                          // RUN CLUSTER
+        implicit val timeout: Timeout = Timeout(20.seconds)
+        implicit val scheduler: Scheduler = system.scheduler
+        implicit val context: ExecutionContextExecutor = system.executionContext
 
-            val clientActor = system.systemActorOf(UserActor.apply(controller = receivedController), "myself")
-            clientActor ! NewClient(userPort, userNickName)
+        val loader: FXMLLoader = new FXMLLoader()
+        loader.setLocation(getClass.getResource("/chatwindow.fxml"))
+        try {
+          loader.load()
+        } catch {
+          case exception: IOException =>
+            exception.printStackTrace()
+          // Выводим ошибку в консоль, но приложение не должно падать
         }
+
+        val root: Parent = loader.getRoot
+        val stage: Stage = new Stage()
+        val receivedController: MessageService = loader.getController
+        stage.setScene(new Scene(root))
+        stage.setTitle("Chat")
+        stage.show()
+
+        val clientActor = system.systemActorOf(UserActor.apply(controller = receivedController), "myself")
+        clientActor ! NewClient(userPort, userNickName)
+
+      } catch {
+        case e: Exception =>
+          e.printStackTrace()
+          // Логируем ошибку или выводим сообщение пользователю
+          println("Ошибка при старте клиента или загрузке окна: " + e.getMessage)
+      }
+    } else {
+      // В случае пустых полей выводим соответствующее сообщение
+      println("Поля для логина или порта не заполнены.")
     }
+  }
 
   // Метод для получения свободного порта для клиента
-    def freePorts: Int = {
-        var freePort: Int = 0
-        try{
-            new ServerSocket(25251).close()
-            freePort = 25251
-            freePort
-        } catch {
-            case _: IOException =>
-                Using(new ServerSocket(0)) (_.getLocalPort).foreach(port => freePort = port)
-                freePort
-        }
+  def freePorts: Int = {
+    var freePort: Int = 0
+    try {
+      new ServerSocket(25251).close()
+      freePort = 25251
+      freePort
+    } catch {
+      case _: IOException =>
+        Using(new ServerSocket(0))(_.getLocalPort).foreach(port => freePort = port)
+        freePort
     }
+  }
 }
