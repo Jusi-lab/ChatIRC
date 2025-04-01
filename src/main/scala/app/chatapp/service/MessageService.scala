@@ -23,7 +23,6 @@ class MessageService extends MessageController with Initializable {
     private val generalRoom: User = new User(-1, "Group chat", null)
 
     override def initialize(location: URL, resources: ResourceBundle): Unit = {
-
         sendButton.setVisible(false)
         messagesTextField.setVisible(false)
 
@@ -67,12 +66,13 @@ class MessageService extends MessageController with Initializable {
                 if (empty || item == null) {
                     setText(null)
                 } else {
+                    val senderName = item.getSenderName // Получаем имя отправителя
                     if (item.getFrom == myself.getRef) {
-                        setText("(" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + ") " + item.getTextBody)
+                        setText("(" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + ") " + senderName + ": " + item.getTextBody)
                         setAlignment(Pos.TOP_RIGHT)
                     } else {
                         setAlignment(Pos.TOP_LEFT)
-                        setText(item.getTextBody + " (" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + ")")
+                        setText(senderName + ": " + item.getTextBody + " (" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm")) + ")")
                     }
                 }
             }
@@ -96,12 +96,11 @@ class MessageService extends MessageController with Initializable {
         })
     }
 
-
     // Метод для отправки сообщения
     def sendMessage(): Unit = {
         if (messagesTextField.getText.nonEmpty) {
             println("--Button is pressed--")
-            val message: ChatMessage = new ChatMessage(myself.getRef, currentFriend.getRef, messagesTextField.getText)
+            val message: ChatMessage = new ChatMessage(myself.getRef, currentFriend.getRef, messagesTextField.getText, myself.getNickName)
             messagesTextField.clear()
             myself.saveMessagesInChat(message, currentFriend)
             chatListView.getItems.clear()
