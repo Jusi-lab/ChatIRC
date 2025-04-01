@@ -7,7 +7,6 @@ import app.chatapp.controller.LoginController
 import app.chatapp.MainApp.startup
 import UserActor.NewClient
 import javafx.fxml.{FXMLLoader, Initializable}
-import javafx.scene.image.Image
 import javafx.scene.input.{KeyCode, KeyEvent}
 import javafx.scene.{Parent, Scene}
 import javafx.stage.Stage
@@ -57,12 +56,14 @@ class LoginService extends LoginController with Initializable {
   // Метод для обработки входа в систему
   def signIn(): Unit = {
     // Проверяем, что поля не пустые
-    if (nickNameField.getText.nonEmpty || portField.getText.nonEmpty) {
+    if (nickNameField.getText.trim.isEmpty || portField.getText.trim.isEmpty) {
+      println("The fields for login or port should not be empty.")
+    } else {
       userNickName = nickNameField.getText
       signInButton.getScene.getWindow.hide()
 
       try {
-        val system = startup(userPort)                          // RUN CLUSTER
+        val system = startup(userPort)
         implicit val timeout: Timeout = Timeout(20.seconds)
         implicit val scheduler: Scheduler = system.scheduler
         implicit val context: ExecutionContextExecutor = system.executionContext
@@ -74,7 +75,6 @@ class LoginService extends LoginController with Initializable {
         } catch {
           case exception: IOException =>
             exception.printStackTrace()
-          // Выводим ошибку в консоль, но приложение не должно падать
         }
 
         val root: Parent = loader.getRoot
@@ -86,16 +86,11 @@ class LoginService extends LoginController with Initializable {
 
         val clientActor = system.systemActorOf(UserActor.apply(controller = receivedController), "myself")
         clientActor ! NewClient(userPort, userNickName)
-
       } catch {
         case e: Exception =>
           e.printStackTrace()
-          // Логируем ошибку или выводим сообщение пользователю
           println("Ошибка при старте клиента или загрузке окна: " + e.getMessage)
       }
-    } else {
-      // В случае пустых полей выводим соответствующее сообщение
-      println("Поля для логина или порта не заполнены.")
     }
   }
 
