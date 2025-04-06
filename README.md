@@ -1,6 +1,7 @@
 Инструкция:
 
 1)Запустить сборку.
+
 Изначально в проекте уже указан порт в application.conf 
 (akka.remote.artery.canonical.port = 25251).
 Можно изменить его на любой из seed-nodes.
