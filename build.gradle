@@ -40,4 +40,5 @@ dependencies {
     implementation platform("com.typesafe.akka:akka-bom_${versions.ScalaBinary}:2.6.18")
 
     implementation "com.typesafe.akka:akka-cluster-typed_${versions.ScalaBinary}"
+    implementation 'com.typesafe:config:1.4.1'
 }

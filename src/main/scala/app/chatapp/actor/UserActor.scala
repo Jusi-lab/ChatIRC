@@ -10,13 +10,12 @@ import javafx.application.Platform
 
 import scala.language.postfixOps
 
-
 object UserActor {
 
-    // Ключ для регистрации актора в Receptionist
+    // ключ регистрации актора в Receptionist
     val clientServiceKey: ServiceKey[Event] = ServiceKey[UserActor.Event]("Client")
 
-    // Переменные для хранения данных о клиенте и списке клиентов в кластере
+    // хранение данных о клиенте и списке клиентов в кластере
     var clientInCluster: User = _
     var currentCountClients: IndexedSeq[ActorRef[UserActor.Event]] = _
 
@@ -46,20 +45,23 @@ object UserActor {
     private def init(ctx: ActorContext[Event], controller: MessageService): Behavior[Event] = {
         Behaviors.receiveMessage {
             case NewClient(clientPort, clientNickName) =>
+                // регистрация нового клиента
                 println("------IN NEW_CLIENT CASE------" + "\nport: " + clientPort + "\nnick: " + clientNickName)
                 clientActor = ctx.self
                 clientInCluster = new User(clientPort, clientNickName, ctx.self)
+                // обновление UI на у клинета
                 Platform.runLater(() => controller.setMySelf(clientInCluster))
 
+                // регистрируем текущего актора Receptionist
                 ctx.system.receptionist ! Receptionist.Register(clientServiceKey, ctx.self)
 
+                // получение обновлений списка клиентов
                 val subscriptionAdapter = ctx.messageAdapter[Receptionist.Listing] {
                     case UserActor.clientServiceKey.Listing(clients) =>
                         ClientsUpdated(clients)
                 }
-                // Подписываемся на изменения списка клиентов
+                // подписка на изменения списка клиентов
                 ctx.system.receptionist ! Receptionist.Subscribe(UserActor.clientServiceKey, subscriptionAdapter)
-
                 running(ctx, controller, clientPort, clientNickName)
         }
     }
@@ -68,31 +70,38 @@ object UserActor {
                         clientPort: Int, clientNickName: String): Behavior[Event] =
         Behaviors.receiveMessage {
             case ClientsUpdated(newClients) =>
+                // обновление списка клиентов и информирование статуса
                 currentCountClients = newClients.toIndexedSeq
                 println("Size newClients: " + newClients.size)
                 ctx.log.info("///// List of services registered with the receptionist changed: {}", newClients)
+                // Отправка другим клиентам
                 newClients.foreach(actor => if (actor != ctx.self) actor ! MyInfo(new User(clientPort, clientNickName, ctx.self)))
                 running(ctx, controller, clientPort, clientNickName)
 
             case MyInfo(receivedClient) =>
+                // Информации о новом клиенте
                 println("------OTHER ACTOR TAKE NEW ACTOR------")
                 Platform.runLater(() => controller.newUser(receivedClient))
                 Behaviors.same
 
             case PostMessage(message, friend) =>
+                // Новое сообщения от другого клиента
                 Platform.runLater(() => controller.setMessageFromOtherActor(message, friend))
                 Behaviors.same
 
             case PostMessageToGeneral(message, generalRoom) =>
+                // Отправка в общий чат сообщения
                 currentCountClients.foreach(actor => if (actor != ctx.self) actor ! PostMessage(message, generalRoom))
                 Behaviors.same
 
             case StopActor() =>
+                // Остановка актера и информирование других клиентов
                 println("---CASE STOPaCTOR---")
                 currentCountClients.foreach(actor => if (actor != ctx.self) actor ! DeleteStoppedActor(clientInCluster))
                 Behaviors.stopped
 
             case DeleteStoppedActor(friend) =>
+                // Удаление клиента из списка
                 Platform.runLater(() => controller.deleteUser(friend))
                 Behaviors.same
         }

@@ -1,110 +1,88 @@
 package app.chatapp.service
 
-import akka.actor.typed.Scheduler
+import akka.actor.typed.{Scheduler, ActorRef, ActorSystem}
 import akka.util.Timeout
-import app.chatapp.actor.UserActor
+import app.chatapp.actor.UserActor.{NewClient}
 import app.chatapp.controller.LoginController
 import app.chatapp.MainApp.startup
-import UserActor.NewClient
 import javafx.fxml.{FXMLLoader, Initializable}
 import javafx.scene.input.{KeyCode, KeyEvent}
 import javafx.scene.{Parent, Scene}
 import javafx.stage.Stage
-
-import java.io.IOException
-import java.net.{ServerSocket, URL}
+import com.typesafe.config.ConfigFactory
+import java.net.URL
 import java.util.ResourceBundle
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.DurationInt
-import scala.util.Using
+import app.chatapp.actor.UserActor
 
 // Сервис для обработки логики окна входа
 class LoginService extends LoginController with Initializable {
 
-  // Переменная для хранения свободного порта
-  private val userPort: Int = freePorts
-
-  // Переменная для хранения имени пользователя
   private var userNickName: String = _
 
-  // Инициализация компонента
+  // Инициализация кнопки входа
   override def initialize(location: URL, resources: ResourceBundle): Unit = {
+    // Изменяем стиль кнопки при наведении
+    signInButton.setOnMouseEntered(_ => setButtonStyle("#643a7e"))
+    signInButton.setOnMouseExited(_ => setButtonStyle("#806491"))
+    // Обработка клика
+    signInButton.setOnAction(_ => signIn())
 
-    portField.setText(userPort.toString)
-
-    signInButton.setOnMouseEntered(_ => {
-      signInButton.setStyle("-fx-background-color: #643a7e")
-    })
-
-    signInButton.setOnMouseExited(_ => {
-      signInButton.setStyle("-fx-background-color: #806491")
-    })
-
-    signInButton.setOnAction(_ => {
-      signIn()
-    })
-
+    // Обработка Enter
     nickNameField.setOnKeyPressed((t: KeyEvent) => {
-      if (t.getCode.equals(KeyCode.ENTER)) signIn()
-    })
-
-    portField.setOnKeyPressed((t: KeyEvent) => {
-      if (t.getCode.equals(KeyCode.ENTER)) signIn()
+      if (t.getCode == KeyCode.ENTER) signIn()
     })
   }
 
-  // Метод для обработки входа в систему
+  // Метод входа в систему
   def signIn(): Unit = {
-    // Проверяем, что поля не пустые
-    if (nickNameField.getText.trim.isEmpty || portField.getText.trim.isEmpty) {
-      println("The fields for login or port should not be empty.")
+    // Получаем текст из поля
+    val nickName = nickNameField.getText.trim
+    if (nickName.isEmpty) {
+      // Ошибка пустое
+      println("The login field should not be empty.")
     } else {
-      userNickName = nickNameField.getText
+      userNickName = nickName
       signInButton.getScene.getWindow.hide()
-
-      try {
-        val system = startup(userPort)
-        implicit val timeout: Timeout = Timeout(20.seconds)
-        implicit val scheduler: Scheduler = system.scheduler
-        implicit val context: ExecutionContextExecutor = system.executionContext
-
-        val loader: FXMLLoader = new FXMLLoader()
-        loader.setLocation(getClass.getResource("/chatwindow.fxml"))
-        try {
-          loader.load()
-        } catch {
-          case exception: IOException =>
-            exception.printStackTrace()
-        }
-
-        val root: Parent = loader.getRoot
-        val stage: Stage = new Stage()
-        val receivedController: MessageService = loader.getController
-        stage.setScene(new Scene(root))
-        stage.setTitle("Chat")
-        stage.show()
-
-        val clientActor = system.systemActorOf(UserActor.apply(controller = receivedController), "myself")
-        clientActor ! NewClient(userPort, userNickName)
-      } catch {
-        case e: Exception =>
-          e.printStackTrace()
-          println("Ошибка при старте клиента или загрузке окна: " + e.getMessage)
-      }
+      // Инициализируем систему актеров
+      initializeActorSystem()
     }
   }
 
-  // Метод для получения свободного порта для клиента
-  def freePorts: Int = {
-    var freePort: Int = 0
+  // Инициализации ActorSystem
+  private def initializeActorSystem(): Unit = {
     try {
-      new ServerSocket(25251).close()
-      freePort = 25251
-      freePort
+      // Загружаем конфигурацию для получения порта
+      val config = ConfigFactory.load()
+      val userPort = config.getInt("akka.remote.artery.canonical.port")
+      val system = startup(userPort)
+      implicit val timeout: Timeout = Timeout(20.seconds)
+      implicit val scheduler: Scheduler = system.scheduler
+      implicit val context: ExecutionContextExecutor = system.executionContext
+
+      // Загрузка главное окна
+      val loader = new FXMLLoader(getClass.getResource("/chatwindow.fxml"))
+      val root: Parent = loader.load()
+      val stage: Stage = new Stage()
+      val receivedController = loader.getController[MessageService]
+      stage.setScene(new Scene(root))
+      stage.setTitle("Chat")
+      stage.show()
+
+      // Создаем актера для текущего пользователя
+      val clientActor = system.systemActorOf(UserActor.apply(receivedController), "myself")
+      // Отправляем сообщение с никнеймом и портом пользователя
+      clientActor ! NewClient(userPort, userNickName)
     } catch {
-      case _: IOException =>
-        Using(new ServerSocket(0))(_.getLocalPort).foreach(port => freePort = port)
-        freePort
+      case e: Exception =>
+        e.printStackTrace()
+        println(s"Ошибка при старте клиента или загрузке окна: ${e.getMessage}")
     }
+  }
+
+  //  стиль для кнопки
+  private def setButtonStyle(color: String): Unit = {
+    signInButton.setStyle(s"-fx-background-color: $color")
   }
 }

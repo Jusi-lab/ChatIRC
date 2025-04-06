@@ -11,17 +11,12 @@
    <children>
       <VBox alignment="CENTER" layoutX="50.0" layoutY="20.0" spacing="10.0" prefWidth="250.0">
          <children>
-            <Text text="AKACHAT">
+            <Text text="AKKA CHAT">
                <font>
                   <Font size="16.0" />
                </font>
             </Text>
             <TextField fx:id="nickNameField" prefHeight="25.0" prefWidth="250.0" promptText="Login">
-               <font>
-                  <Font size="12.0" />
-               </font>
-            </TextField>
-            <TextField fx:id="portField" prefHeight="25.0" prefWidth="250.0" promptText="Port">
                <font>
                   <Font size="12.0" />
                </font>
